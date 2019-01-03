@@ -6,6 +6,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * Because the original TicketMaster response is dirty. We need to 
+ * reorganize it
+ * @author Shu
+ *
+ */
 public class Item {
 	private String itemId; 
 	private String name;
@@ -59,7 +65,7 @@ public class Item {
 		return obj;
 	}
 	
-	public static class ItemBuilder { // must be static, 如果不是static, 必须现有item类，但是
+	public static class ItemBuilder { // must be static, 如果不是static, 必须现先item类，但是
 		private String itemId; 		  // 我就是要item类
 		private String name; 
 		private double rating; 
@@ -98,7 +104,7 @@ public class Item {
 		}
 	}
 	
-	private Item(ItemBuilder builder) {
+	private Item(ItemBuilder builder) { // better to be private
 		this.itemId = builder.itemId; 
 		this.name = builder.name; 
 		this.rating = builder.rating; 
@@ -110,11 +116,12 @@ public class Item {
 	}
 	
 //  builder pattern的好处，只需要把我需要的参数设定出来，不需要的用系统默认的就好
-	public static void main(String args[]) {
-		ItemBuilder builder = new ItemBuilder();
-		builder.setName("music festival");
-		builder.setDistance(20);
-		builder.setRating(4.5);
-		Item item = builder.build();
-	}
+//      				  避免Item的constructor太长
+//	public static void main(String args[]) {
+//		ItemBuilder builder = new ItemBuilder();
+//		builder.setName("music festival");
+//		builder.setDistance(20);
+//		builder.setRating(4.5);
+//		Item item = builder.build();
+//	}
 }
