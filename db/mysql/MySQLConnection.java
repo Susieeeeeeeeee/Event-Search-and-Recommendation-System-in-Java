@@ -1,29 +1,84 @@
 package db.mysql;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 import java.util.List;
+import java.util.Set;
+import java.util.PrimitiveIterator.OfDouble;
+
+import db.DBConnection;
+import entity.Item;
+import external.TicketMasterAPI;
+
 import java.util.Set;
 
 import db.DBConnection;
 import entity.Item;
 
 public class MySQLConnection implements DBConnection {
+	private Connection conn;
+
+	public MySQLConnection() {
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").getConstructor().newInstance();
+			conn = DriverManager.getConnection(MySQLDBUtil.URL);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
-
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
 	public void setFavoriteItems(String userId, List<String> itemIds) {
-		// TODO Auto-generated method stub
-
+		if (conn == null) {
+			System.err.println("DBConnection Connection failed!");
+			return;
+		}
+		
+		try {
+			String sql = "INSERT IGNORE INTO history(user_id, item_id) VALUES(?, ?)";
+			PreparedStatement stmt = conn.prepareStatement(sql);
+			stmt.setString(1, userId);
+			for (String itemId : itemIds) {
+				stmt.setString(2, itemId);
+				stmt.execute(); 
+			}
+		} catch (SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void unsetFavoriteItems(String userId, List<String> itemIds) {
-		// TODO Auto-generated method stub
-
+		if (conn == null) {
+			System.err.println("DBConnection Connection failed!");
+			return;
+		}
+		
+		try {
+			String sql = "DELETE FROM history WHERE user_id = ? AND item_id = ?";
+			PreparedStatement stmt = conn.prepareStatement(sql);
+			stmt.setString(1, userId);
+			for (String itemId : itemIds) {
+				stmt.setString(2, itemId);
+				stmt.execute();
+			}
+		} catch (SQLException e){
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -46,13 +101,59 @@ public class MySQLConnection implements DBConnection {
 
 	@Override
 	public List<Item> searchItems(double lat, double lon, String term) {
-		// TODO Auto-generated method stub
-		return null;
+		TicketMasterAPI tmApi = new TicketMasterAPI();
+		List<Item> items = tmApi.search(lat, lon, term);
+		for (Item item : items) {
+			saveItem(item);
+		}
+		return items;
 	}
 
 	@Override
 	public void saveItem(Item item) {
-		// TODO Auto-generated method stub
+		if (conn == null) {
+			System.err.println("DBConnection Connection failed!");
+			return;
+		}
+		
+		try {
+			// SQL Injection
+			// Example:
+			// SELECT * FROM users WHERE username = '<username>' AND password = '<password>'
+			// version 1
+			// username: aoweifapweofj' OR 1=1 --
+			// password: joaiefjajfaow
+			// ->
+			// SELECT * FROM users WHERE username = 'aoweifapweofj' OR 1=1 --' AND password = 'joaiefjajfaow'
+			// version 2
+			// username: oiaejofijaw
+			// password: awjeofaiwjefowai' OR '1' = '1
+			// ->
+			// SELECT * FROM users WHERE username = 'oiaejofijaw' AND password = 'awjeofaiwjefowai' OR '1' = '1'
+			
+			//IGNORE meaning if there is alreay an exisiting itemid(primary key), skip this sql
+			String sql = "INSERT IGNORE INTO items VALUES (?, ?, ?, ?, ?, ?, ?)";
+			PreparedStatement stmt = conn.prepareStatement(sql);
+			stmt.setString(1, item.getItemId());
+			stmt.setString(2, item.getName());
+			stmt.setDouble(3, item.getRating());
+			stmt.setString(4, item.getAddress());
+			stmt.setString(5, item.getImageUrl());
+			stmt.setString(6, item.getUrl());
+			stmt.setDouble(7, item.getDistance());
+			stmt.execute();
+			
+			sql = "INSERT IGNORE INTO categories VALUES (?, ?)";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, item.getItemId());
+			for (String category : item.getCategories()) { // one item can have multiple categories
+				stmt.setString(2, category);
+				stmt.execute();
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
 
 	}
 
