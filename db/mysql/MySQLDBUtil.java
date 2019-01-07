@@ -3,6 +3,8 @@ package db.mysql;
 public class MySQLDBUtil {
 	private static final String HOSTNAME = "localhost";
 	private static final String PORT_NUM = "8889"; // change it to your mysql port number
+//	private static final String PORT_NUM = "3306"; // to deploy on aws
+
 	public static final String DB_NAME = "laiproject";
 	private static final String USERNAME = "root";
 	private static final String PASSWORD = "root";
